@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>FirstAlexChess - Ultimate Portal</title>
+    <!-- Шахматная логика и Firebase -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --light: #dee3e6; --dark: #8ca2ad; --bg: #0b0a09; --panel: #1c1b19; --accent: #3692e7; --gold: #d4af37; --size: 65px; }
+        
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: #bababa; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+
+        /* --- 1. ПРИВЕТСТВЕННЫЙ ЭКРАН --- */
+        #welcome-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 10000; transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        .welcome-content { text-align: center; animation: fadeIn 1.5s ease; }
+        .welcome-logo { font-size: 5em; font-weight: 900; color: white; text-shadow: 0 0 20px var(--accent); margin: 0; letter-spacing: 5px; }
+        .welcome-tagline { font-size: 1.2em; color: #666; margin-top: 10px; font-style: italic; }
+        
+        .start-btn {
+            margin-top: 40px; padding: 15px 40px; font-size: 1.2em; font-weight: bold;
+            background: transparent; color: var(--accent); border: 2px solid var(--accent);
+            border-radius: 50px; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(54, 146, 231, 0.2);
+        }
+        .start-btn:hover { background: var(--accent); color: white; box-shadow: 0 0 30px var(--accent); transform: scale(1.05); }
+
+        /* --- 2. ЭКРАН ВХОДА --- */
+        #auth-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 9999;
+        }
+        .auth-card { 
+            background: var(--panel); padding: 40px; border-radius: 15px; width: 320px; text-align: center;
+            border: 1px solid #333; box-shadow: 0 10px 50px rgba(0,0,0,0.7);
+        }
+        .auth-card input { width: 100%; padding: 12px; margin-bottom: 15px; background: #000; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; }
+
+        /* --- 3. ГЛАВНЫЙ ИНТЕРФЕЙС --- */
+        #main-app { display: none; width: 100%; flex-direction: column; align-items: center; }
+        nav { width: 100%; background: #000; padding: 15px 50px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); box-sizing: border-box; }
+        .container { display: flex; gap: 20px; padding: 20px; max-width: 1400px; width: 100%; box-sizing: border-box; justify-content: center; }
+
+        /* Доска */
+        .board-wrapper { position: relative; width: 520px; height: 520px; border: 4px solid #222; box-shadow: 0 0 40px rgba(0,0,0,0.6); }
+        .board { display: grid; grid-template-columns: repeat(8, var(--size)); grid-template-rows: repeat(8, var(--size)); }
+        .square { width: var(--size); height: var(--size); position: relative; display: flex; align-items: center; justify-content: center; }
+        .square.light { background-color: var(--light); }
+        .square.dark { background-color: var(--dark); }
+        .square.selected { background-color: rgba(255, 255, 0, 0.4) !important; }
+        .piece { width: 100%; height: 100%; background-size: 85%; background-repeat: no-repeat; background-position: center; cursor: grab; z-index: 5; position: absolute; }
+        
+        /* Панели */
+        .sidebar { width: 320px; display: flex; flex-direction: column; gap: 15px; }
+        .panel { background: var(--panel); padding: 15px; border-radius: 10px; border: 1px solid #2a2a2a; }
+        button { width: 100%; padding: 12px; margin: 5px 0; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: var(--accent); color: white; transition: 0.2s; }
+        button:hover { filter: brightness(1.2); transform: translateY(-1px); }
+
+        /* Анимации */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Фигуры Lichess */
+        .wP { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wP.svg'); }
+        .wR { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wR.svg'); }
+        .wN { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wN.svg'); }
+        .wB { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wB.svg'); }
+        .wQ { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wQ.svg'); }
+        .wK { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wK.svg'); }
+        .bP { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bP.svg'); }
+        .bR { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bR.svg'); }
+        .bN { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bN.svg'); }
+        .bB { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bB.svg'); }
+        .bQ { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bQ.svg'); }
+        .bK { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bK.svg'); }
+    </style>
+</head>
+<body>
+
+    <!-- 1. ПРИВЕТСТВЕННЫЙ ЭКРАН -->
+    <div id="welcome-screen">
+        <div class="welcome-content">
+            <h1 class="welcome-logo">FirstAlexChess</h1>
+            <p class="welcome-tagline">Будущее шахмат начинается здесь.</p>
+            <button class="start-btn" onclick="startJourney()">ВОЙТИ В ПОРТАЛ</button>
+        </div>
+    </div>
+
+    <!-- 2. ЭКРАН ВХОДА -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <h2 style="color:white; margin-top:0;">Вход в систему</h2>
+            <input type="text" id="login-user" placeholder="Ваше имя">
+            <input type="password" id="login-pass" placeholder="Пароль">
+            <button onclick="handleLogin()">АВТОРИЗАЦИЯ</button>
+            <p style="font-size: 0.7em; color: #555; margin-top: 15px;">Только админ FirstAlex имеет доступ к управлению новостями.</p>
+        </div>
+    </div>
+
+    <!-- 3. ГЛАВНОЕ ПРИЛОЖЕНИЕ -->
+    <div id="main-app">
+        <nav>
+            <div class="logo">FirstAlexChess</div>
+            <div id="user-info" style="font-weight:bold; color:var(--gold);"></div>
+        </nav>
+
+        <div class="container">
+            <!-- ЛЕВО: НОВОСТИ -->
+            <div style="width:280px;">
+                <div class="panel">
+                    <h3 style="margin-top:0; color:white;">Новости</h3>
+                    <div id="news-box" style="font-size:0.9em;"></div>
+                </div>
+            </div>
+
+            <!-- ЦЕНТР: ДОСКА -->
+            <div class="board-wrapper">
+                <div id="board" class="board"></div>
+            </div>
+
+            <!-- ПРАВО: УПРАВЛЕНИЕ -->
+            <div class="sidebar">
+                <div class="panel">
+                    <div id="status" style="text-align:center; font-weight:bold; color:white; margin-bottom:10px;">Режим ожидания</div>
+                    <button onclick="createGame()" style="background:var(--gold); color:#000;">СОЗДАТЬ ИГРУ ПО СЕТИ</button>
+                    <button onclick="joinGame()">ВОЙТИ ПО КОДУ</button>
+                    <div id="room-code-display" style="text-align:center; color:cyan; font-family:monospace; margin-top:5px; font-weight:bold;"></div>
+                </div>
+
+                <!-- АДМИНКА (СКРЫТА) -->
+                <div class="panel" id="admin-panel" style="display:none; border: 1px solid var(--gold);">
+                    <h4 style="color:var(--gold); margin:0 0 10px 0;">АДМИН-ПАНЕЛЬ</h4>
+                    <input type="text" id="post-title" placeholder="Заголовок" style="width:100%; margin-bottom:5px; background:#000; color:white; border:1px solid #444; border-radius:4px; padding:5px; box-sizing:border-box;">
+                    <textarea id="post-text" placeholder="Текст..." style="width:100%; height:50px; background:#000; color:white; border:1px solid #444; border-radius:4px; padding:5px; box-sizing:border-box;"></textarea>
+                    <button onclick="sendNews()">Опубликовать</button>
+                </div>
+
+                <div class="panel" style="flex-grow:1; font-size:0.8em; overflow-y:auto; background:#000;" id="history"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- ТВОИ КЛЮЧИ FIREBASE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCrUqczn8OpOhAl9yBUFaxTL00itH-k1Is",
+        authDomain: "firstalex-6614a.firebaseapp.com",
+        projectId: "firstalex-6614a",
+        storageBucket: "firstalex-6614a.firebasestorage.app",
+        messagingSenderId: "693029803168",
+        appId: "1:693029803168:web:1a57d4568bb3ef791065c5",
+        measurementId: "G-NKX72BBT3V",
+        databaseURL: "https://firstalex-6614a-default-rtdb.firebaseio.com/"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const game = new Chess();
+    const boardEl = document.getElementById('board');
+    let myColor = 'w';
+    let activeRoom = null;
+    let selectedSq = null;
+
+    // --- ПЕРЕХОДЫ ---
+    function startJourney() {
+        document.getElementById('welcome-screen').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('welcome-screen').style.visibility = 'hidden';
+            document.getElementById('auth-overlay').style.display = 'flex';
+        }, 800);
+    }
+
+    function handleLogin() {
+        const u = document.getElementById('login-user').value;
+        const p = document.getElementById('login-pass').value;
+        if (u === "FirstAlex" && p === "123456") login(u, true);
+        else if (u.length > 2) login(u, false);
+        else alert("Введите имя (мин. 3 символа)");
+    }
+
+    function login(name, isAdmin) {
+        localStorage.setItem('alexChessUser', JSON.stringify({name, isAdmin}));
+        document.getElementById('auth-overlay').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        document.getElementById('user-info').innerText = (isAdmin ? "★ " : "") + name;
+        if(isAdmin) document.getElementById('admin-panel').style.display = 'block';
+        initBoard();
+        loadNews();
+    }
+
+    // --- ЛОГИКА ШАХМАТ ---
+    function initBoard() {
+        boardEl.innerHTML = '';
+        for (let i = 0; i < 64; i++) {
+            const sq = document.createElement('div');
+            const r = Math.floor(i / 8), c = i % 8;
+            sq.className = `square ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
+            const pos = String.fromCharCode(97 + c) + (8 - r);
+            sq.dataset.pos = pos;
+            sq.onclick = () => handleSquareClick(pos);
+            boardEl.appendChild(sq);
+        }
+        render();
+    }
+
+    function render() {
+        document.querySelectorAll('.piece').forEach(p => p.remove());
+        document.querySelectorAll('.square').forEach(s => s.classList.remove('selected'));
+        if (selectedSq) document.querySelector(`[data-pos="${selectedSq}"]`).classList.add('selected');
+
+        game.board().forEach((row, rIdx) => {
+            row.forEach((piece, cIdx) => {
+                if (piece) {
+                    const pos = String.fromCharCode(97 + cIdx) + (8 - rIdx);
+                    const sq = document.querySelector(`[data-pos="${pos}"]`);
+                    const p = document.createElement('div');
+                    p.className = `piece ${piece.color}${piece.type.toUpperCase()}`;
+                    sq.appendChild(p);
+                }
+            });
+        });
+    }
+
+    function handleSquareClick(pos) {
+        if (activeRoom && game.turn() !== myColor) return;
+        if (selectedSq) {
+            const move = game.move({ from: selectedSq, to: pos, promotion: 'q' });
+            if (move) {
+                selectedSq = null; render();
+                if (activeRoom) db.ref('games/' + activeRoom).set({ fen: game.fen() });
+            } else {
+                const p = game.get(pos);
+                selectedSq = (p && p.color === game.turn()) ? pos : null;
+            }
+        } else {
+            const p = game.get(pos);
+            if (p && p.color === game.turn()) selectedSq = pos;
+        }
+        render();
+    }
+
+    // --- МУЛЬТИПЛЕЕР ---
+    function createGame() {
+        activeRoom = Math.random().toString(36).substring(2, 7);
+        myColor = 'w';
+        db.ref('games/' + activeRoom).set({ fen: game.fen() });
+        listenRoom();
+        document.getElementById('room-code-display').innerText = "КОД: " + activeRoom;
+        document.getElementById('status').innerText = "Игра за Белых";
+    }
+
+    function joinGame() {
+        const code = prompt("Введите код комнаты:");
+        if (!code) return;
+        activeRoom = code;
+        myColor = 'b';
+        listenRoom();
+        document.getElementById('room-code-display').innerText = "КОД: " + activeRoom;
+        document.getElementById('status').innerText = "Игра за Черных";
+    }
+
+    function listenRoom() {
+        db.ref('games/' + activeRoom).on('value', (snap) => {
+            const d = snap.val();
+            if (d && d.fen !== game.fen()) { game.load(d.fen); render(); }
+        });
+    }
+
+    // --- БАЗА НОВОСТЕЙ ---
+    function sendNews() {
+        const title = document.getElementById('post-title').value;
+        const text = document.getElementById('post-text').value;
+        if(title && text) {
+            db.ref('news').push({ title, text });
+            document.getElementById('post-title').value = '';
+            document.getElementById('post-text').value = '';
+        }
+    }
+
+    function loadNews() {
+        db.ref('news').on('value', (snap) => {
+            const data = snap.val();
+            const box = document.getElementById('news-box');
+            box.innerHTML = data ? Object.values(data).reverse().map(n => `
+                <div style="border-bottom:1px solid #333; margin-bottom:10px; padding-bottom:5px;">
+                    <b style="color:white;">${n.title}</b><p style="margin:5px 0;">${n.text}</p>
+                </div>
+            `).join('') : '<p>Новостей нет</p>';
+        });
+    }
+
+    function logout() { localStorage.clear(); location.reload(); }
+    
+    // Авто-вход если уже логинился
+    const saved = localStorage.getItem('alexChessUser');
+    if (saved) {
+        const u = JSON.parse(saved);
+        document.getElementById('welcome-screen').style.display = 'none';
+        login(u.name, u.isAdmin);
+    }
+</script>
+</body>
+</html>
