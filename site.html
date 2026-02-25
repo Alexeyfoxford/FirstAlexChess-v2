@@ -2,70 +2,377 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>FirstAlexChess - Ultimate Portal</title>
-    <!-- Шахматная логика и Firebase -->
+    <title>FirstAlexChess - Шахматный портал</title>
+    <!-- Шахматная логика и конфетти -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
     <style>
-        :root { --light: #dee3e6; --dark: #8ca2ad; --bg: #0b0a09; --panel: #1c1b19; --accent: #3692e7; --gold: #d4af37; --size: 65px; }
-        
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: #bababa; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        /* --- 1. ПРИВЕТСТВЕННЫЙ ЭКРАН --- */
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1e2b;
+            color: #ddd;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Приветственный экран */
         #welcome-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 10000; transition: opacity 0.8s ease, visibility 0.8s;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #0f1219 0%, #1a1f2f 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 1s;
         }
-        .welcome-content { text-align: center; animation: fadeIn 1.5s ease; }
-        .welcome-logo { font-size: 5em; font-weight: 900; color: white; text-shadow: 0 0 20px var(--accent); margin: 0; letter-spacing: 5px; }
-        .welcome-tagline { font-size: 1.2em; color: #666; margin-top: 10px; font-style: italic; }
-        
+
+        .welcome-content {
+            text-align: center;
+        }
+
+        .chess-animation {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .piece-icon {
+            width: 70px;
+            height: 70px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 0 15px #5699ff);
+        }
+
+        .welcome-logo {
+            font-size: 4rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 0 30px #5699ff;
+            margin-bottom: 20px;
+        }
+
         .start-btn {
-            margin-top: 40px; padding: 15px 40px; font-size: 1.2em; font-weight: bold;
-            background: transparent; color: var(--accent); border: 2px solid var(--accent);
-            border-radius: 50px; cursor: pointer; transition: all 0.3s;
-            box-shadow: 0 0 15px rgba(54, 146, 231, 0.2);
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: #2d9cdb;
+            border: none;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
         }
-        .start-btn:hover { background: var(--accent); color: white; box-shadow: 0 0 30px var(--accent); transform: scale(1.05); }
 
-        /* --- 2. ЭКРАН ВХОДА --- */
-        #auth-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 9999;
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px #2d9cdb;
         }
-        .auth-card { 
-            background: var(--panel); padding: 40px; border-radius: 15px; width: 320px; text-align: center;
-            border: 1px solid #333; box-shadow: 0 10px 50px rgba(0,0,0,0.7);
-        }
-        .auth-card input { width: 100%; padding: 12px; margin-bottom: 15px; background: #000; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; }
 
-        /* --- 3. ГЛАВНЫЙ ИНТЕРФЕЙС --- */
-        #main-app { display: none; width: 100%; flex-direction: column; align-items: center; }
-        nav { width: 100%; background: #000; padding: 15px 50px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); box-sizing: border-box; }
-        .container { display: flex; gap: 20px; padding: 20px; max-width: 1400px; width: 100%; box-sizing: border-box; justify-content: center; }
+        /* Праздничный баннер */
+        #birthday-banner {
+            display: none;
+            background: linear-gradient(90deg, #f9ca24, #f0932b);
+            color: #2c3e50;
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            animation: pulse 2s infinite;
+            border-radius: 50px;
+            margin: 10px auto;
+            max-width: 800px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Главный экран */
+        #main-screen {
+            display: none;
+            padding: 15px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Шапка с вкладками */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #262b3a;
+            padding: 8px;
+            border-radius: 60px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            color: #aaa;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: 0.3s;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            background: #2d9cdb;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
 
         /* Доска */
-        .board-wrapper { position: relative; width: 520px; height: 520px; border: 4px solid #222; box-shadow: 0 0 40px rgba(0,0,0,0.6); }
-        .board { display: grid; grid-template-columns: repeat(8, var(--size)); grid-template-rows: repeat(8, var(--size)); }
-        .square { width: var(--size); height: var(--size); position: relative; display: flex; align-items: center; justify-content: center; }
-        .square.light { background-color: var(--light); }
-        .square.dark { background-color: var(--dark); }
-        .square.selected { background-color: rgba(255, 255, 0, 0.4) !important; }
-        .piece { width: 100%; height: 100%; background-size: 85%; background-repeat: no-repeat; background-position: center; cursor: grab; z-index: 5; position: absolute; }
-        
-        /* Панели */
-        .sidebar { width: 320px; display: flex; flex-direction: column; gap: 15px; }
-        .panel { background: var(--panel); padding: 15px; border-radius: 10px; border: 1px solid #2a2a2a; }
-        button { width: 100%; padding: 12px; margin: 5px 0; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: var(--accent); color: white; transition: 0.2s; }
-        button:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        .board-section {
+            flex: 1;
+            min-width: 500px;
+        }
 
-        /* Анимации */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .board-wrapper {
+            background: #262b3a;
+            padding: 20px;
+            border-radius: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
 
-        /* Фигуры Lichess */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            width: 480px;
+            height: 480px;
+            margin: 0 auto;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .square.light { background: #f0d9b5; }
+        .square.dark { background: #b58863; }
+        .square.selected { box-shadow: inset 0 0 0 3px #2d9cdb; }
+        .square.best-move { box-shadow: inset 0 0 0 3px #27ae60; }
+
+        .piece {
+            width: 50px;
+            height: 50px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: pointer;
+        }
+
+        /* Панель анализа */
+        .analysis-panel {
+            width: 380px;
+            background: #262b3a;
+            padding: 20px;
+            border-radius: 25px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: #1a1e2b;
+            border: 1px solid #3a4050;
+            border-radius: 12px;
+            color: white;
+            padding: 12px;
+            font-family: monospace;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 16px;
+            background: #2d9cdb;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: 600;
+            flex: 1;
+            min-width: 100px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        button.secondary {
+            background: #e74c3c;
+        }
+
+        button.tertiary {
+            background: #27ae60;
+        }
+
+        .computer-btn {
+            background: #9b59b6;
+            font-size: 16px;
+            padding: 15px;
+        }
+
+        .computer-btn:hover {
+            background: #8e44ad;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .slider-container input {
+            flex: 1;
+        }
+
+        .eval-container {
+            background: #1a1e2b;
+            padding: 15px;
+            border-radius: 15px;
+            margin: 15px 0;
+        }
+
+        .eval-bar-bg {
+            background: #2c3e50;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .eval-bar {
+            height: 100%;
+            width: 50%;
+            background: linear-gradient(90deg, #3498db, #e74c3c);
+        }
+
+        .analysis-results {
+            background: #1a1e2b;
+            padding: 15px;
+            border-radius: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .analysis-line {
+            padding: 6px;
+            border-bottom: 1px solid #333;
+            color: #aaffaa;
+        }
+
+        /* Кнопка доната */
+        #donate-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(255,107,107,0.4);
+            z-index: 9999;
+            transition: 0.3s;
+            border: none;
+            font-size: 1.1rem;
+        }
+
+        #donate-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 30px rgba(255,107,107,0.6);
+        }
+
+        /* Модальное окно доната */
+        #donate-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 10001;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .donate-content {
+            background: #262b3a;
+            padding: 30px;
+            border-radius: 30px;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .donate-content h2 {
+            color: #ff8e53;
+            margin-bottom: 20px;
+        }
+
+        .donate-content input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: #1a1e2b;
+            border: 1px solid #ff8e53;
+            border-radius: 25px;
+            color: white;
+        }
+
+        .close-btn {
+            background: #e74c3c;
+            margin-top: 15px;
+        }
+
+        /* Фигуры */
         .wP { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wP.svg'); }
         .wR { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wR.svg'); }
         .wN { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wN.svg'); }
@@ -78,232 +385,549 @@
         .bB { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bB.svg'); }
         .bQ { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bQ.svg'); }
         .bK { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bK.svg'); }
+        .wK-icon { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wK.svg'); }
+        .bK-icon { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bK.svg'); }
+        .wQ-icon { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wQ.svg'); }
+        .bQ-icon { background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bQ.svg'); }
     </style>
 </head>
 <body>
-
-    <!-- 1. ПРИВЕТСТВЕННЫЙ ЭКРАН -->
+    <!-- Приветственный экран -->
     <div id="welcome-screen">
         <div class="welcome-content">
+            <div class="chess-animation">
+                <div class="piece-icon wK-icon"></div>
+                <div class="piece-icon wQ-icon"></div>
+                <div class="piece-icon bK-icon"></div>
+                <div class="piece-icon bQ-icon"></div>
+            </div>
             <h1 class="welcome-logo">FirstAlexChess</h1>
-            <p class="welcome-tagline">Будущее шахмат начинается здесь.</p>
-            <button class="start-btn" onclick="startJourney()">ВОЙТИ В ПОРТАЛ</button>
+            <button class="start-btn" onclick="startJourney()">Начать</button>
         </div>
     </div>
 
-    <!-- 2. ЭКРАН ВХОДА -->
-    <div id="auth-overlay">
-        <div class="auth-card">
-            <h2 style="color:white; margin-top:0;">Вход в систему</h2>
-            <input type="text" id="login-user" placeholder="Ваше имя">
-            <input type="password" id="login-pass" placeholder="Пароль">
-            <button onclick="handleLogin()">АВТОРИЗАЦИЯ</button>
-            <p style="font-size: 0.7em; color: #555; margin-top: 15px;">Только админ FirstAlex имеет доступ к управлению новостями.</p>
+    <!-- Праздничный баннер (появится если 13 марта) -->
+    <div id="birthday-banner"></div>
+
+    <!-- Главный экран -->
+    <div id="main-screen">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('analysis')">Анализ партии</div>
+            <div class="tab" onclick="switchTab('editor')">Редактор доски</div>
+            <div class="tab" onclick="switchTab('play')">Игра с компьютером</div>
+        </div>
+
+        <!-- Анализ партии -->
+        <div id="analysis-tab" class="tab-content active">
+            <div class="container">
+                <div class="board-section">
+                    <div class="board-wrapper">
+                        <div id="board" class="board"></div>
+                    </div>
+                </div>
+                
+                <div class="analysis-panel">
+                    <h2>Анализ партии</h2>
+                    
+                    <div class="button-group">
+                        <button onclick="setupStart()">Начальная</button>
+                        <button onclick="clearBoard()">Очистить</button>
+                    </div>
+
+                    <textarea id="pgnInput" placeholder="Вставьте PGN партии..."></textarea>
+                    
+                    <div class="button-group">
+                        <button onclick="loadPGN()">Загрузить PGN</button>
+                        <button class="tertiary" onclick="analyzePosition()">Анализировать</button>
+                    </div>
+
+                    <div class="eval-container">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Белые</span>
+                            <span>Черные</span>
+                        </div>
+                        <div class="eval-bar-bg">
+                            <div id="evalBar" class="eval-bar"></div>
+                        </div>
+                        <div id="evalText" style="text-align: center; margin-top: 8px;">Оценка: 0.00</div>
+                    </div>
+
+                    <div class="analysis-results" id="analysisResults">
+                        <div class="analysis-line">Нажмите Анализировать для оценки</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Редактор доски -->
+        <div id="editor-tab" class="tab-content">
+            <div class="container">
+                <div class="board-section">
+                    <div class="board-wrapper">
+                        <div id="editor-board" class="board"></div>
+                    </div>
+                </div>
+                
+                <div class="analysis-panel">
+                    <h2>Редактор доски</h2>
+                    
+                    <div class="button-group">
+                        <button onclick="setupEmpty()">Пустая</button>
+                        <button onclick="setupStart()">Начальная</button>
+                        <button onclick="clearBoard()">Сброс</button>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="tertiary" onclick="analyzePosition()">Анализировать</button>
+                    </div>
+
+                    <div class="eval-container">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Белые</span>
+                            <span>Черные</span>
+                        </div>
+                        <div class="eval-bar-bg">
+                            <div id="editorEvalBar" class="eval-bar"></div>
+                        </div>
+                        <div id="editorEvalText" style="text-align: center; margin-top: 8px;">Оценка: 0.00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Игра с компьютером -->
+        <div id="play-tab" class="tab-content">
+            <div class="container">
+                <div class="board-section">
+                    <div class="board-wrapper">
+                        <div id="play-board" class="board"></div>
+                    </div>
+                </div>
+                
+                <div class="analysis-panel">
+                    <h2>Игра с компьютером</h2>
+                    
+                    <button class="computer-btn" onclick="startComputerGame()">▶ Начать игру с компьютером</button>
+                    
+                    <div class="slider-container">
+                        <span>Сложность:</span>
+                        <input type="range" id="skillLevel" min="1" max="20" value="10">
+                        <span id="skillValue">10</span>
+                    </div>
+
+                    <button class="secondary" onclick="stopComputer()">⏹ Остановить игру</button>
+
+                    <div class="eval-container">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Белые (ты)</span>
+                            <span>Черные (комп)</span>
+                        </div>
+                        <div class="eval-bar-bg">
+                            <div id="playEvalBar" class="eval-bar"></div>
+                        </div>
+                        <div id="playEvalText" style="text-align: center; margin-top: 8px;">Оценка: 0.00</div>
+                    </div>
+
+                    <div class="analysis-results" id="playResults">
+                        <div class="analysis-line">Нажми "Начать игру"</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- 3. ГЛАВНОЕ ПРИЛОЖЕНИЕ -->
-    <div id="main-app">
-        <nav>
-            <div class="logo">FirstAlexChess</div>
-            <div id="user-info" style="font-weight:bold; color:var(--gold);"></div>
-        </nav>
+    <!-- Кнопка доната -->
+    <button id="donate-button" onclick="openDonateModal()">🎁 Поддержать проект</button>
 
-        <div class="container">
-            <!-- ЛЕВО: НОВОСТИ -->
-            <div style="width:280px;">
-                <div class="panel">
-                    <h3 style="margin-top:0; color:white;">Новости</h3>
-                    <div id="news-box" style="font-size:0.9em;"></div>
-                </div>
-            </div>
-
-            <!-- ЦЕНТР: ДОСКА -->
-            <div class="board-wrapper">
-                <div id="board" class="board"></div>
-            </div>
-
-            <!-- ПРАВО: УПРАВЛЕНИЕ -->
-            <div class="sidebar">
-                <div class="panel">
-                    <div id="status" style="text-align:center; font-weight:bold; color:white; margin-bottom:10px;">Режим ожидания</div>
-                    <button onclick="createGame()" style="background:var(--gold); color:#000;">СОЗДАТЬ ИГРУ ПО СЕТИ</button>
-                    <button onclick="joinGame()">ВОЙТИ ПО КОДУ</button>
-                    <div id="room-code-display" style="text-align:center; color:cyan; font-family:monospace; margin-top:5px; font-weight:bold;"></div>
-                </div>
-
-                <!-- АДМИНКА (СКРЫТА) -->
-                <div class="panel" id="admin-panel" style="display:none; border: 1px solid var(--gold);">
-                    <h4 style="color:var(--gold); margin:0 0 10px 0;">АДМИН-ПАНЕЛЬ</h4>
-                    <input type="text" id="post-title" placeholder="Заголовок" style="width:100%; margin-bottom:5px; background:#000; color:white; border:1px solid #444; border-radius:4px; padding:5px; box-sizing:border-box;">
-                    <textarea id="post-text" placeholder="Текст..." style="width:100%; height:50px; background:#000; color:white; border:1px solid #444; border-radius:4px; padding:5px; box-sizing:border-box;"></textarea>
-                    <button onclick="sendNews()">Опубликовать</button>
-                </div>
-
-                <div class="panel" style="flex-grow:1; font-size:0.8em; overflow-y:auto; background:#000;" id="history"></div>
-            </div>
+    <!-- Модальное окно доната -->
+    <div id="donate-modal" onclick="if(event.target===this) closeDonateModal()">
+        <div class="donate-content">
+            <h2>Поддержать FirstAlexChess</h2>
+            <p>Спасибо, что хочешь поддержать проект! Твоя помощь вдохновляет на новые фичи.</p>
+            <input type="text" id="donateAmount" placeholder="Сумма (например, 100)" value="100">
+            <button onclick="processDonation()">💝 Перейти к оплате</button>
+            <button class="close-btn" onclick="closeDonateModal()">Закрыть</button>
+            <p style="font-size: 12px; margin-top: 15px;">Переход на Donation Alerts</p>
         </div>
     </div>
 
-<script>
-    // --- ТВОИ КЛЮЧИ FIREBASE ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyCrUqczn8OpOhAl9yBUFaxTL00itH-k1Is",
-        authDomain: "firstalex-6614a.firebaseapp.com",
-        projectId: "firstalex-6614a",
-        storageBucket: "firstalex-6614a.firebasestorage.app",
-        messagingSenderId: "693029803168",
-        appId: "1:693029803168:web:1a57d4568bb3ef791065c5",
-        measurementId: "G-NKX72BBT3V",
-        databaseURL: "https://firstalex-6614a-default-rtdb.firebaseio.com/"
-    };
+    <script>
+        // --- Конфигурация ---
+        const DONATION_URL = 'https://www.donationalerts.com/r/alexey_rozhkov_1'; // ЗАМЕНИ НА СВОЮ ССЫЛКУ
+        
+        // --- Шахматный движок ---
+        const game = new Chess();
+        let selectedSq = null;
+        let engine = null;
+        let engineReady = false;
+        let computerMode = false;
+        let computerColor = 'b';
+        let movePending = false;
+        let skillLevel = 10;
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const game = new Chess();
-    const boardEl = document.getElementById('board');
-    let myColor = 'w';
-    let activeRoom = null;
-    let selectedSq = null;
-
-    // --- ПЕРЕХОДЫ ---
-    function startJourney() {
-        document.getElementById('welcome-screen').style.opacity = '0';
-        setTimeout(() => {
-            document.getElementById('welcome-screen').style.visibility = 'hidden';
-            document.getElementById('auth-overlay').style.display = 'flex';
-        }, 800);
-    }
-
-    function handleLogin() {
-        const u = document.getElementById('login-user').value;
-        const p = document.getElementById('login-pass').value;
-        if (u === "FirstAlex" && p === "123456") login(u, true);
-        else if (u.length > 2) login(u, false);
-        else alert("Введите имя (мин. 3 символа)");
-    }
-
-    function login(name, isAdmin) {
-        localStorage.setItem('alexChessUser', JSON.stringify({name, isAdmin}));
-        document.getElementById('auth-overlay').style.display = 'none';
-        document.getElementById('main-app').style.display = 'flex';
-        document.getElementById('user-info').innerText = (isAdmin ? "★ " : "") + name;
-        if(isAdmin) document.getElementById('admin-panel').style.display = 'block';
-        initBoard();
-        loadNews();
-    }
-
-    // --- ЛОГИКА ШАХМАТ ---
-    function initBoard() {
-        boardEl.innerHTML = '';
-        for (let i = 0; i < 64; i++) {
-            const sq = document.createElement('div');
-            const r = Math.floor(i / 8), c = i % 8;
-            sq.className = `square ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
-            const pos = String.fromCharCode(97 + c) + (8 - r);
-            sq.dataset.pos = pos;
-            sq.onclick = () => handleSquareClick(pos);
-            boardEl.appendChild(sq);
+        // --- Проверка дня рождения ---
+        function checkBirthday() {
+            const today = new Date();
+            const day = today.getDate();
+            const month = today.getMonth() + 1;
+            
+            if (day === 13 && month === 3) {
+                const banner = document.getElementById('birthday-banner');
+                const user = JSON.parse(localStorage.getItem('alexChessUser') || '{}');
+                
+                if (user.isAdmin) {
+                    banner.innerHTML = '🎉 С ДНЁМ РОЖДЕНИЯ, FIRSTALEX! 🎉 Желаем гроссмейстерских побед и блестящих идей!';
+                } else {
+                    banner.innerHTML = '🎉 Сегодня день рождения создателя FirstAlexChess! Поздравляем! 🎉';
+                }
+                banner.style.display = 'block';
+                
+                // Запускаем конфетти
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+                
+                // Периодически запускаем конфетти
+                setInterval(() => {
+                    confetti({
+                        particleCount: 50,
+                        spread: 100,
+                        origin: { y: 0.6 }
+                    });
+                }, 3000);
+            }
         }
-        render();
-    }
 
-    function render() {
-        document.querySelectorAll('.piece').forEach(p => p.remove());
-        document.querySelectorAll('.square').forEach(s => s.classList.remove('selected'));
-        if (selectedSq) document.querySelector(`[data-pos="${selectedSq}"]`).classList.add('selected');
+        // --- Инициализация Stockfish ---
+        function initEngine() {
+            try {
+                engine = new Worker('stockfish-18-lite-single.js');
+                engine.onmessage = (e) => onEngineMessage(e.data);
+                engine.postMessage('uci');
+                engine.postMessage('isready');
+                engineReady = true;
+                console.log('Stockfish готов');
+            } catch (e) {
+                console.error('Engine error:', e);
+            }
+        }
 
-        game.board().forEach((row, rIdx) => {
-            row.forEach((piece, cIdx) => {
-                if (piece) {
-                    const pos = String.fromCharCode(97 + cIdx) + (8 - rIdx);
-                    const sq = document.querySelector(`[data-pos="${pos}"]`);
-                    const p = document.createElement('div');
-                    p.className = `piece ${piece.color}${piece.type.toUpperCase()}`;
-                    sq.appendChild(p);
+        // --- Запуск приложения ---
+        function startJourney() {
+            document.getElementById('welcome-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('welcome-screen').style.display = 'none';
+                document.getElementById('main-screen').style.display = 'block';
+                initBoards();
+                initEngine();
+                checkBirthday();
+            }, 1000);
+        }
+
+        // --- Инициализация всех досок ---
+        function initBoards() {
+            ['board', 'editor-board', 'play-board'].forEach(boardId => {
+                const boardEl = document.getElementById(boardId);
+                if (!boardEl) return;
+                
+                boardEl.innerHTML = '';
+                for (let i = 0; i < 64; i++) {
+                    const sq = document.createElement('div');
+                    const r = Math.floor(i / 8);
+                    const c = i % 8;
+                    sq.className = `square ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
+                    const pos = String.fromCharCode(97 + c) + (8 - r);
+                    sq.dataset.pos = pos;
+                    sq.onclick = () => handleSquareClick(pos, boardId);
+                    boardEl.appendChild(sq);
                 }
             });
-        });
-    }
+            renderAllBoards();
+        }
 
-    function handleSquareClick(pos) {
-        if (activeRoom && game.turn() !== myColor) return;
-        if (selectedSq) {
-            const move = game.move({ from: selectedSq, to: pos, promotion: 'q' });
-            if (move) {
-                selectedSq = null; render();
-                if (activeRoom) db.ref('games/' + activeRoom).set({ fen: game.fen() });
-            } else {
-                const p = game.get(pos);
-                selectedSq = (p && p.color === game.turn()) ? pos : null;
+        // --- Отрисовка всех досок ---
+        function renderAllBoards() {
+            ['board', 'editor-board', 'play-board'].forEach(boardId => {
+                renderBoard(boardId);
+            });
+        }
+
+        function renderBoard(boardId) {
+            const boardEl = document.getElementById(boardId);
+            if (!boardEl) return;
+            
+            boardEl.querySelectorAll('.piece').forEach(p => p.remove());
+            boardEl.querySelectorAll('.square').forEach(s => {
+                s.classList.remove('selected', 'best-move');
+            });
+
+            if (selectedSq && boardId === getActiveBoard()) {
+                const sel = boardEl.querySelector(`[data-pos="${selectedSq}"]`);
+                if (sel) sel.classList.add('selected');
             }
-        } else {
-            const p = game.get(pos);
-            if (p && p.color === game.turn()) selectedSq = pos;
+
+            const board = game.board();
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const piece = board[r][c];
+                    if (piece) {
+                        const pos = String.fromCharCode(97 + c) + (8 - r);
+                        const sq = boardEl.querySelector(`[data-pos="${pos}"]`);
+                        const p = document.createElement('div');
+                        p.className = `piece ${piece.color}${piece.type.toUpperCase()}`;
+                        sq.appendChild(p);
+                    }
+                }
+            }
         }
-        render();
-    }
 
-    // --- МУЛЬТИПЛЕЕР ---
-    function createGame() {
-        activeRoom = Math.random().toString(36).substring(2, 7);
-        myColor = 'w';
-        db.ref('games/' + activeRoom).set({ fen: game.fen() });
-        listenRoom();
-        document.getElementById('room-code-display').innerText = "КОД: " + activeRoom;
-        document.getElementById('status').innerText = "Игра за Белых";
-    }
-
-    function joinGame() {
-        const code = prompt("Введите код комнаты:");
-        if (!code) return;
-        activeRoom = code;
-        myColor = 'b';
-        listenRoom();
-        document.getElementById('room-code-display').innerText = "КОД: " + activeRoom;
-        document.getElementById('status').innerText = "Игра за Черных";
-    }
-
-    function listenRoom() {
-        db.ref('games/' + activeRoom).on('value', (snap) => {
-            const d = snap.val();
-            if (d && d.fen !== game.fen()) { game.load(d.fen); render(); }
-        });
-    }
-
-    // --- БАЗА НОВОСТЕЙ ---
-    function sendNews() {
-        const title = document.getElementById('post-title').value;
-        const text = document.getElementById('post-text').value;
-        if(title && text) {
-            db.ref('news').push({ title, text });
-            document.getElementById('post-title').value = '';
-            document.getElementById('post-text').value = '';
+        function getActiveBoard() {
+            if (document.getElementById('play-tab').classList.contains('active')) {
+                return 'play-board';
+            }
+            return 'board';
         }
-    }
 
-    function loadNews() {
-        db.ref('news').on('value', (snap) => {
-            const data = snap.val();
-            const box = document.getElementById('news-box');
-            box.innerHTML = data ? Object.values(data).reverse().map(n => `
-                <div style="border-bottom:1px solid #333; margin-bottom:10px; padding-bottom:5px;">
-                    <b style="color:white;">${n.title}</b><p style="margin:5px 0;">${n.text}</p>
-                </div>
-            `).join('') : '<p>Новостей нет</p>';
+        // --- Клик по клетке ---
+        function handleSquareClick(pos, boardId) {
+            if (boardId !== getActiveBoard()) return;
+            
+            // В режиме компьютера блокируем ходы, если не очередь игрока
+            if (computerMode && game.turn() !== 'w') return;
+            
+            if (selectedSq) {
+                try {
+                    const move = game.move({ from: selectedSq, to: pos, promotion: 'q' });
+                    if (move) {
+                        selectedSq = null;
+                        renderAllBoards();
+                        
+                        // Если компьютерный режим и теперь очередь компьютера
+                        if (computerMode && game.turn() === computerColor && !game.game_over()) {
+                            setTimeout(() => computerMove(), 200);
+                        }
+                    } else {
+                        const piece = game.get(pos);
+                        selectedSq = (piece && piece.color === game.turn()) ? pos : null;
+                        renderAllBoards();
+                    }
+                } catch (e) {
+                    console.log('Невозможный ход');
+                }
+            } else {
+                const piece = game.get(pos);
+                if (piece && piece.color === game.turn()) selectedSq = pos;
+                renderAllBoards();
+            }
+        }
+
+        // --- Управление позицией ---
+        function setupEmpty() {
+            stopComputer();
+            game.clear();
+            selectedSq = null;
+            renderAllBoards();
+        }
+
+        function setupStart() {
+            stopComputer();
+            game.reset();
+            selectedSq = null;
+            renderAllBoards();
+        }
+
+        function clearBoard() {
+            stopComputer();
+            game.reset();
+            selectedSq = null;
+            renderAllBoards();
+        }
+
+        function loadPGN() {
+            const pgn = document.getElementById('pgnInput').value;
+            if (pgn) {
+                game.load_pgn(pgn);
+                selectedSq = null;
+                renderAllBoards();
+            }
+        }
+
+        // --- Игра с компьютером ---
+        function startComputerGame() {
+            stopComputer();
+            computerMode = true;
+            game.reset();
+            renderAllBoards();
+            
+            skillLevel = parseInt(document.getElementById('skillLevel').value);
+            document.getElementById('skillValue').innerText = skillLevel;
+            
+            if (engineReady) {
+                engine.postMessage(`setoption name Skill Level value ${skillLevel}`);
+            }
+            
+            document.getElementById('playResults').innerHTML = '<div class="analysis-line">Игра началась! Твой ход.</div>';
+        }
+
+        function stopComputer() {
+            computerMode = false;
+            movePending = false;
+        }
+
+        function computerMove() {
+            if (!computerMode || !engineReady || game.game_over() || game.turn() !== computerColor || movePending) return;
+            
+            movePending = true;
+            const fen = game.fen();
+            engine.postMessage('position fen ' + fen);
+            engine.postMessage('go movetime 1000');
+        }
+
+        // --- Анализ позиции ---
+        function analyzePosition() {
+            if (!engineReady) {
+                document.getElementById('analysisResults').innerHTML = '<div class="analysis-line">Движок загружается...</div>';
+                return;
+            }
+
+            const fen = game.fen();
+            document.getElementById('analysisResults').innerHTML = '<div class="analysis-line">Анализируем...</div>';
+            
+            engine.postMessage('position fen ' + fen);
+            engine.postMessage('go movetime 2000');
+        }
+
+        // --- Обработка сообщений от Stockfish ---
+        function onEngineMessage(msg) {
+            const str = typeof msg === 'string' ? msg : msg;
+            
+            if (str.includes('score cp')) {
+                const match = str.match(/score cp (-?\d+)/);
+                if (match) {
+                    const score = parseInt(match[1]) / 100;
+                    updateEvalBar(score);
+                }
+            }
+            
+            if (str.startsWith('bestmove')) {
+                movePending = false;
+                const parts = str.split(' ');
+                const bestMove = parts[1];
+                
+                if (bestMove && bestMove !== '(none)') {
+                    showBestMove(bestMove);
+                    
+                    // Если это компьютерный ход
+                    if (computerMode && game.turn() === computerColor) {
+                        const from = bestMove.substring(0,2);
+                        const to = bestMove.substring(2,4);
+                        const move = game.move({ from, to, promotion: 'q' });
+                        if (move) {
+                            renderAllBoards();
+                        }
+                    }
+                    
+                    document.getElementById('analysisResults').innerHTML = `
+                        <div class="analysis-line">Лучший ход: ${bestMove}</div>
+                    `;
+                    
+                    document.getElementById('playResults').innerHTML = `
+                        <div class="analysis-line">Лучший ход: ${bestMove}</div>
+                    `;
+                }
+            }
+        }
+
+        function updateEvalBar(score) {
+            let percent = 50 + score * 5;
+            percent = Math.max(5, Math.min(95, percent));
+            
+            document.getElementById('evalBar').style.width = percent + '%';
+            if (document.getElementById('editorEvalBar')) {
+                document.getElementById('editorEvalBar').style.width = percent + '%';
+            }
+            if (document.getElementById('playEvalBar')) {
+                document.getElementById('playEvalBar').style.width = percent + '%';
+            }
+            
+            let evalText = `Оценка: ${score > 0 ? '+' : ''}${score.toFixed(2)}`;
+            document.getElementById('evalText').innerHTML = evalText;
+            if (document.getElementById('editorEvalText')) {
+                document.getElementById('editorEvalText').innerHTML = evalText;
+            }
+            if (document.getElementById('playEvalText')) {
+                document.getElementById('playEvalText').innerHTML = evalText;
+            }
+        }
+
+        function showBestMove(move) {
+            document.querySelectorAll('.square').forEach(s => {
+                s.classList.remove('best-move');
+            });
+            
+            if (move && move !== '(none)') {
+                const from = move.substring(0,2);
+                const to = move.substring(2,4);
+                
+                const fromSq = document.querySelector(`[data-pos="${from}"]`);
+                const toSq = document.querySelector(`[data-pos="${to}"]`);
+                
+                if (fromSq) fromSq.classList.add('best-move');
+                if (toSq) toSq.classList.add('best-move');
+            }
+        }
+
+        // --- Переключение вкладок ---
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'analysis') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('analysis-tab').classList.add('active');
+            } else if (tab === 'editor') {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('editor-tab').classList.add('active');
+            } else if (tab === 'play') {
+                document.querySelectorAll('.tab')[2].classList.add('active');
+                document.getElementById('play-tab').classList.add('active');
+            }
+            
+            // Сбрасываем выделение при смене вкладки
+            selectedSq = null;
+            renderAllBoards();
+        }
+
+        // --- Обработчик ползунка ---
+        document.getElementById('skillLevel').addEventListener('input', function(e) {
+            skillLevel = e.target.value;
+            document.getElementById('skillValue').innerText = skillLevel;
+            if (engineReady) {
+                engine.postMessage(`setoption name Skill Level value ${skillLevel}`);
+            }
         });
-    }
 
-    function logout() { localStorage.clear(); location.reload(); }
-    
-    // Авто-вход если уже логинился
-    const saved = localStorage.getItem('alexChessUser');
-    if (saved) {
-        const u = JSON.parse(saved);
-        document.getElementById('welcome-screen').style.display = 'none';
-        login(u.name, u.isAdmin);
-    }
-</script>
+        // --- Донат ---
+        function openDonateModal() {
+            document.getElementById('donate-modal').style.display = 'flex';
+        }
+
+        function closeDonateModal() {
+            document.getElementById('donate-modal').style.display = 'none';
+        }
+
+        function processDonation() {
+            const amount = document.getElementById('donateAmount').value;
+            window.open(DONATION_URL, '_blank');
+            closeDonateModal();
+        }
+
+        // --- Автозапуск ---
+        window.onload = function() {
+            console.log('FirstAlexChess готов');
+        };
+    </script>
 </body>
 </html>
